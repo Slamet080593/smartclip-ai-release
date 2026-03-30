@@ -28,13 +28,6 @@ from core.timecode import parse_timecode_to_seconds
 ctk.set_appearance_mode("Dark")
 ctk.set_default_color_theme("blue")
 
-LAUGHDOSE_CAPTION_TEMPLATES = [
-    ("INI NGAKAK BANGET 😭", "Lu kuat nonton ini tanpa ketawa ga? 😂"),
-    ("GUE GA KUAT 😭", "Yang begini nih bikin hari jadi lebih ringan 😂 Lu pernah ngalamin juga?"),
-    ("REAL BANGET 😭", "Kadang hal kecil gini malah paling bikin ngakak 😂"),
-    ("TUNGGU SAMPE AKHIR 😭", "Endingnya ga ketebak 😂"),
-]
-
 PLATFORM_HASHTAGS = {
     "TikTok": "#fyp #funny #viral #ngakak #lucu #shorts",
     "Instagram Reels": "#reels #funny #viral #ngakak #lucu",
@@ -531,29 +524,37 @@ class YtClipperApp(ctk.CTk):
         self._render_results_view()
 
     def _build_platform_copy(self, clip: dict, clip_index: int, video_meta: dict, video_file: str) -> dict[str, str]:
-        hook, engagement = LAUGHDOSE_CAPTION_TEMPLATES[(clip_index - 1) % len(LAUGHDOSE_CAPTION_TEMPLATES)]
         ai_caption = (clip.get("caption") or "").strip()
         reason = (clip.get("reason") or "").strip()
         credit = (clip.get("credit") or f"cc @{video_meta.get('uploader', 'creator')}").strip()
         title = (clip.get("title") or f"Clip {clip_index}").strip()
         file_name = Path(video_file).name
 
-        if ai_caption:
-            body = ai_caption
-        elif reason:
-            body = f"{reason} 😂"
+        caption_lines = [line.strip() for line in ai_caption.splitlines() if line.strip()]
+        if caption_lines:
+            hook = caption_lines[0]
+            body = "\n".join(caption_lines[1:]).strip()
         else:
-            body = "Auto hiburan random yang bikin susah nahan ketawa 😂"
+            hook = title
+            body = ""
 
-        short_body = body.replace("\n", " ").strip()
-        generic = f"{hook}\n\n{short_body}\n{engagement}"
+        if not body:
+            body = reason or title
+
+        def finalize_copy(base_text: str, hashtags: str) -> str:
+            parts = [base_text.strip()]
+            if hashtags and "#" not in base_text:
+                parts.append(hashtags)
+            if credit and credit.lower() not in base_text.lower():
+                parts.append(credit)
+            return "\n\n".join(part for part in parts if part)
 
         return {
-            "TikTok": f"{generic}\n\n{PLATFORM_HASHTAGS['TikTok']}\n\n{credit}",
-            "Instagram Reels": f"{hook}\n\n{title}\n{short_body}\n\n{PLATFORM_HASHTAGS['Instagram Reels']}\n\n{credit}",
-            "Facebook": f"Pernah ngalamin gini ga? 😭😂\n\n{title}\n{short_body}\n\nTag temen lo yang pasti ketawa liat ini 🤣\n\n{PLATFORM_HASHTAGS['Facebook']}\n\n{credit}",
-            "YouTube Shorts": f"{hook}\n{title}\n{short_body}\n\n{PLATFORM_HASHTAGS['YouTube Shorts']}\n\n{credit}",
-            "Asset Info": f"Judul: {title}\nFile: {file_name}\nStart: {clip.get('start', '-')}\nEnd: {clip.get('end', '-')}\nCredit: {credit}",
+            "TikTok": finalize_copy(ai_caption or "\n\n".join(part for part in [hook, body] if part), PLATFORM_HASHTAGS["TikTok"]),
+            "Instagram Reels": finalize_copy("\n\n".join(part for part in [hook, body if body != title else "", title if title.lower() not in hook.lower() else ""] if part), PLATFORM_HASHTAGS["Instagram Reels"]),
+            "Facebook": finalize_copy("\n\n".join(part for part in [hook, body, title if title.lower() not in hook.lower() else ""] if part), PLATFORM_HASHTAGS["Facebook"]),
+            "YouTube Shorts": finalize_copy("\n\n".join(part for part in [hook, title if title.lower() not in hook.lower() else "", body] if part), PLATFORM_HASHTAGS["YouTube Shorts"]),
+            "Asset Info": f"Title: {title}\nFile: {file_name}\nStart: {clip.get('start', '-')}\nEnd: {clip.get('end', '-')}\nCredit: {credit}",
         }
 
     def _render_results_view(self) -> None:

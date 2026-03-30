@@ -79,7 +79,7 @@ def analyze_transcript(prompt_text: str, cli_cmd: str, params: dict, temp_dir: s
         moment_instruction = f"yang paling viral dengan FOKUS UTAMA PADA MOMEN '{moment}' (wajib menonjolkan nuansa emosi {moment})"
         
     system_prompt = (
-        f"Kamu adalah Produser YouTube Shorts/TikTok ahli. "
+        f"Kamu adalah produser YouTube Shorts/TikTok/Reels yang multilingual. "
         f"Baca transkrip podcast ini dan carikan {max_clips} momen/segmen berdurasi "
         f"antara {min_s} hingga {max_s} detik {moment_instruction}.\n\n"
         "OUTPUT HARUS BERUPA JSON ARRAY murni (tanpa Markdown ```json, tanpa teks pengantar):\n"
@@ -93,7 +93,12 @@ def analyze_transcript(prompt_text: str, cli_cmd: str, params: dict, temp_dir: s
         '    "credit": "Credit format untuk sosmed (misal: cc @creator_name)"\n'
         '  }\n'
         ']\n\n'
-        "Gunakan timestamp sepresisi mungkin dari transkrip. Jika tersedia milidetik, pertahankan milidetik itu.\n\n"
+        "Gunakan timestamp sepresisi mungkin dari transkrip. Jika tersedia milidetik, pertahankan milidetik itu.\n"
+        "PENTING: bahasa untuk title, reason, caption, dan credit harus mengikuti bahasa dominan di transkrip/source moment. "
+        "Kalau podcast berbahasa Inggris, output juga harus Inggris. Jangan memaksa bahasa Indonesia.\n"
+        "PENTING: caption harus dimulai dengan hook yang kamu buat sendiri sesuai tone momennya. "
+        "Hook lucu untuk momen lucu, hook emotional untuk momen sedih, hook motivational untuk momen motivasi, dan seterusnya. "
+        "Jangan pakai template hook komedi yang sama untuk semua momen.\n\n"
     )
     
     full_prompt = system_prompt + prompt_text
