@@ -184,3 +184,8 @@ Untuk alpha test via GitHub, paling aman bagikan dalam bentuk:
 4. README ini
 
 Belum disarankan mengklaim ini sebagai installer publik final lintas OS.
+
+## Dokumen Tambahan
+
+- catatan rilis alpha: `RELEASE_NOTES.md`
+- template bug report GitHub: `.github/ISSUE_TEMPLATE/bug_report.md`
