@@ -1,0 +1,7 @@
+ffmpeg-python
+openai-whisper
+yt-dlp
+customtkinter
+Pillow
+youtube-transcript-api
+browser-cookie3
