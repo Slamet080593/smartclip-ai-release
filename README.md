@@ -1,6 +1,15 @@
 # SmartClip AI Release
 
-Linux-first alpha release untuk memotong video panjang menjadi clip vertikal dengan:
+Potong video panjang jadi clip vertikal siap upload dengan bantuan AI, subtitle fallback, dan caption siap copy.
+
+`SmartClip AI Release` adalah build Linux-first untuk creator yang ingin:
+
+- mengambil momen terbaik dari video panjang
+- render cepat ke format vertikal
+- burn subtitle otomatis
+- dapat caption siap copy untuk TikTok, Reels, Facebook, dan Shorts
+
+Engine utamanya:
 
 - `yt-dlp` untuk metadata, audio, dan clip extraction
 - subtitle bawaan YouTube bila tersedia
@@ -12,6 +21,17 @@ Linux-first alpha release untuk memotong video panjang menjadi clip vertikal den
 ## Status
 
 Rilis ini ditujukan untuk **Linux alpha testing**.
+
+## Fitur Utama
+
+- clip extraction dari YouTube/Twitch source
+- subtitle bawaan YouTube bila tersedia
+- fallback Whisper lokal untuk video tanpa subtitle
+- AI-assisted clip selection via `gemini`, `claude`, `qwen`, atau `codex`
+- render vertikal + burn subtitle
+- `Copy Hub` untuk copy caption per platform
+- existing output browser untuk buka hasil lama tanpa rerun
+- storage path configurable per user
 
 Yang sudah siap:
 
