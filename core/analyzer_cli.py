@@ -1,6 +1,54 @@
 import os
 import subprocess
 import json
+import shutil
+from pathlib import Path
+
+COMMON_CLI_DIRS = (
+    Path.home() / ".local" / "bin",
+    Path.home() / ".opencode" / "bin",
+)
+
+
+def _resolve_cli_command(cli_cmd: str) -> str | None:
+    direct = shutil.which(cli_cmd)
+    if direct:
+        return direct
+
+    for directory in COMMON_CLI_DIRS:
+        candidate = directory / cli_cmd
+        if candidate.exists() and os.access(candidate, os.X_OK):
+            return str(candidate)
+
+    nvm_root = Path.home() / ".nvm" / "versions" / "node"
+    if nvm_root.exists():
+        candidates = sorted(nvm_root.glob(f"*/bin/{cli_cmd}"))
+        for candidate in reversed(candidates):
+            if candidate.exists() and os.access(candidate, os.X_OK):
+                return str(candidate)
+    return None
+
+
+def _build_runtime_env(resolved_cmd: str | None) -> dict:
+    env = os.environ.copy()
+    extra_dirs = [str(path) for path in COMMON_CLI_DIRS if path.exists()]
+    nvm_root = Path.home() / ".nvm" / "versions" / "node"
+    if nvm_root.exists():
+        extra_dirs.extend(str(path.parent) for path in sorted(nvm_root.glob("*/bin/codex")))
+        extra_dirs.extend(str(path.parent) for path in sorted(nvm_root.glob("*/bin/gemini")))
+        extra_dirs.extend(str(path.parent) for path in sorted(nvm_root.glob("*/bin/claude")))
+        extra_dirs.extend(str(path.parent) for path in sorted(nvm_root.glob("*/bin/qwen")))
+    if resolved_cmd:
+        extra_dirs.insert(0, str(Path(resolved_cmd).parent))
+
+    existing_path = env.get("PATH", "")
+    deduped = []
+    for item in extra_dirs + existing_path.split(os.pathsep):
+        cleaned = item.strip()
+        if cleaned and cleaned not in deduped:
+            deduped.append(cleaned)
+    env["PATH"] = os.pathsep.join(deduped)
+    return env
 
 def _extract_json_array(raw_output: str) -> list:
     decoder = json.JSONDecoder()
@@ -53,17 +101,23 @@ def analyze_transcript(prompt_text: str, cli_cmd: str, params: dict, temp_dir: s
     
     with open(prompt_file, "w", encoding="utf-8") as f:
         f.write(full_prompt)
-        
-    print(f"[INFO] Memanggil '{cli_cmd}' CLI untuk menganalisa transcript (bisa memakan waktu)...")
+
+    resolved_cmd = _resolve_cli_command(cli_cmd)
+    runtime_env = _build_runtime_env(resolved_cmd)
+    if resolved_cmd:
+        print(f"[INFO] Memanggil '{cli_cmd}' CLI via {resolved_cmd} untuk menganalisa transcript (bisa memakan waktu)...")
+    else:
+        print(f"[INFO] Memanggil '{cli_cmd}' CLI untuk menganalisa transcript (bisa memakan waktu)...")
     
     try:
         with open(prompt_file, "r", encoding="utf-8") as prompt_handle:
             result = subprocess.run(
-                [cli_cmd],
+                [resolved_cmd or cli_cmd],
                 stdin=prompt_handle,
                 capture_output=True,
                 text=True,
                 check=True,
+                env=runtime_env,
             )
         raw_output = result.stdout.strip()
 
@@ -78,7 +132,7 @@ def analyze_transcript(prompt_text: str, cli_cmd: str, params: dict, temp_dir: s
         print(f"Pastikan perintah '{cli_cmd}' terinstall di system dan bisa membaca stdin.")
         return []
     except FileNotFoundError:
-        print(f"[ERROR] Perintah '{cli_cmd}' tidak ditemukan di PATH.")
+        print(f"[ERROR] Perintah '{cli_cmd}' tidak ditemukan. Coba cek instalasi CLI atau PATH GUI.")
         return []
     except json.JSONDecodeError as e:
         print(f"[ERROR] Gagal memparsing JSON dari respon: {e}")
